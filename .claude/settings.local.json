@@ -39,7 +39,9 @@
       "Bash(echo \"rebooting pid $!\")",
       "Bash(psql -h 127.0.0.1 -p 5432 -U postgres -d smart_basket -tAc \"select tablename from pg_tables where schemaname='public' order by 1\")",
       "Bash(curl -s -m 2 -o /dev/null -w \"%{http_code}\" http://localhost:8080/sse)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(git check-ignore *)",
+      "Bash(echo \"booting with wrong pass, pid $!\")"
     ]
   },
   "enableAllProjectMcpServers": true,
