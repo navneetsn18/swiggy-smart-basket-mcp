@@ -1,8 +1,8 @@
 package com.smartbasket.tools;
 
 import com.smartbasket.basket.BasketService;
+import com.smartbasket.basket.FulfillmentService;
 import com.smartbasket.domain.Basket;
-import com.smartbasket.domain.BasketItem;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
@@ -18,9 +18,11 @@ import java.util.List;
 public class BasketTools {
 
     private final BasketService baskets;
+    private final FulfillmentService fulfillment;
 
-    public BasketTools(BasketService baskets) {
+    public BasketTools(BasketService baskets, FulfillmentService fulfillment) {
         this.baskets = baskets;
+        this.fulfillment = fulfillment;
     }
 
     public record ItemView(String productName, int quantity) {
@@ -72,6 +74,15 @@ public class BasketTools {
             @ToolParam(description = "User id") String userId,
             @ToolParam(description = "Name for the new basket") String basketName) {
         return view(baskets.saveCartAsBasket(userId, basketName));
+    }
+
+    @Tool(description = "Add a saved basket to the user's Swiggy Instamart cart, applying learned "
+            + "substitutions for out-of-stock items. Does NOT checkout. Returns what was added, "
+            + "any substitutions applied, and items that could not be fulfilled.")
+    public FulfillmentService.Summary add_basket_to_instamart(
+            @ToolParam(description = "User id") String userId,
+            @ToolParam(description = "Basket name to add") String basketName) {
+        return fulfillment.addBasketToCart(userId, basketName);
     }
 
     private static BasketView view(Basket b) {

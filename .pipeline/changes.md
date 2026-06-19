@@ -39,6 +39,35 @@ Swiggy Instamart MCP until access lands.
   Postgres.
 
 ## Carried forward (not in Phase 1)
-- Real Swiggy MCP client behind `SwiggyGateway` (Phase 2).
-- Substitution engine, AI basket, refill prediction (Phases 3–5).
-- ⚠️ Auth before public exposure; move DB password to env/secrets.
+- AI basket, refill prediction (Phases 4–5).
+- ⚠️ Auth before public exposure (issue #1); DB password via .env (done).
+
+---
+
+# Phase 2 + 3 — Swiggy integration + substitutions
+
+**Branch:** `phase-2-3-swiggy-substitutions`
+
+## Phase 3 (substitutions) — verified on mock
+- `domain/Substitution`, `SubstitutionRepository`, `substitution/SubstitutionService`
+  (learn = append fallback at next priority, idempotent, never invents).
+- `basket/FulfillmentService` + tool `add_basket_to_instamart`: per item, search via
+  gateway; if out of stock, walk the learned fallback chain; update cart; return
+  summary (added / substitutions applied / unavailable). Never checks out.
+- Tools `learn_substitution`, `get_substitutions`.
+- Tests: `SubstitutionServiceTest` (3), `FulfillmentServiceTest` (2). 10/10 total green.
+
+## Phase 2 (real Swiggy) — wired, not live-verified
+- `SwiggyGateway` widened: `searchProduct`, `getCart`, `updateCart`.
+- `MockSwiggyGateway` `@Profile("!live")` (default); `RealSwiggyGateway` `@Profile("live")`.
+- Live connects via **stdio → `npx mcp-remote https://mcp.swiggy.com/im`** (Spring AI
+  1.0.0 / MCP SDK 0.10.0 has no streamable-HTTP client; mcp-remote bridges it and
+  handles the OAuth browser flow + token cache).
+- `application-live.yml` enables the MCP client only under `live`; default keeps it off.
+- ⚠️ Swiggy response JSON field names in `RealSwiggyGateway` are best-effort — confirm
+  against the first real call. Needs Node/npx + a one-time browser login.
+
+## To go live
+1. `npm i -g npm` not needed; ensure Node/npx installed.
+2. (optional) set `SWIGGY_ADDRESS_ID` in `.env`.
+3. Run with `--spring.profiles.active=live`; approve Swiggy login in the browser.

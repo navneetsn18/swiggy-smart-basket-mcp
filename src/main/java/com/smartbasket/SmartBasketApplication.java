@@ -1,6 +1,7 @@
 package com.smartbasket;
 
 import com.smartbasket.tools.BasketTools;
+import com.smartbasket.tools.SubstitutionTools;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.boot.SpringApplication;
@@ -15,7 +16,7 @@ public class SmartBasketApplication {
     }
 
     @Bean
-    ToolCallbackProvider basketToolCallbacks(BasketTools basketTools) {
-        return MethodToolCallbackProvider.builder().toolObjects(basketTools).build();
+    ToolCallbackProvider basketToolCallbacks(BasketTools basketTools, SubstitutionTools substitutionTools) {
+        return MethodToolCallbackProvider.builder().toolObjects(basketTools, substitutionTools).build();
     }
 }

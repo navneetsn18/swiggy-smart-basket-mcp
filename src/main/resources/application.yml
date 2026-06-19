@@ -22,6 +22,9 @@ spring:
         capabilities:
           tool: true
         sse-message-endpoint: /mcp/messages
+      # Swiggy MCP client off by default (mock gateway). Enabled by the 'live' profile.
+      client:
+        enabled: false
 
 server:
   port: 8080

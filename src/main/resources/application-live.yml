@@ -1,0 +1,27 @@
+# Activated with: --spring.profiles.active=live
+#
+# Connects to the Swiggy Instamart MCP (streamable HTTP) through `mcp-remote`, a
+# stdio<->HTTP bridge run via npx. mcp-remote handles the OAuth 2.1 + PKCE flow:
+# on first run it opens a browser to log into Swiggy and caches the token under
+# ~/.mcp-auth, refreshing/re-prompting as needed. Requires Node.js + npx on PATH.
+spring:
+  ai:
+    mcp:
+      client:
+        enabled: true
+        type: SYNC
+        request-timeout: 60s
+        toolcallback:
+          enabled: false
+        stdio:
+          connections:
+            swiggy:
+              command: npx
+              args:
+                - "-y"
+                - "mcp-remote"
+                - "https://mcp.swiggy.com/im"
+
+swiggy:
+  # search_products / cart tools are scoped to a delivery address (get_addresses to find one).
+  address-id: ${SWIGGY_ADDRESS_ID:}
