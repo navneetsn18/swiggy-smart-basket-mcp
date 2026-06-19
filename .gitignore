@@ -1,0 +1,27 @@
+# Added by code-review-graph
+.code-review-graph/
+
+# Maven
+target/
+
+# Spring Boot / secrets
+.env
+*.local.properties
+application-local.yml
+application-local.properties
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# OS / logs
+.DS_Store
+*.log
+
+# Local machine config (not for repo)
+.claude/settings.local.json
+.gemini/settings.json.bak
