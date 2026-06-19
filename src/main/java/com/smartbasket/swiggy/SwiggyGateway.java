@@ -1,28 +1,31 @@
 package com.smartbasket.swiggy;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
- * Boundary to the Swiggy Instamart MCP. Two implementations:
- * {@code MockSwiggyGateway} (default) and {@code RealSwiggyGateway} (profile "live").
+ * Boundary to the Swiggy Instamart MCP. The Swiggy cart is keyed by {@code spinId}
+ * (a specific product variant). The delivery address is an implementation detail
+ * (default address, spec Q3) so it is not part of this contract.
  */
 public interface SwiggyGateway {
 
-    /** A line in the user's Instamart cart. */
+    /** A purchasable product variant returned by search. */
+    record Variant(String spinId, String displayName, String quantityDescription,
+                   boolean inStock, int offerPrice) {
+    }
+
+    /** A line in the current cart (for display). */
     record CartLine(String productName, int quantity) {
     }
 
-    /** A product match from search. */
-    record ProductHit(String productName, boolean available) {
+    /** A line to put in the cart (Swiggy update_cart replaces the whole cart). */
+    record CartItem(String spinId, int quantity) {
     }
 
-    /** Current cart contents. */
+    /** Variants matching a query at the user's default address (in-stock and not). */
+    List<Variant> searchVariants(String userId, String query);
+
     List<CartLine> getCart(String userId);
 
-    /** Top search match for a query, if any. */
-    Optional<ProductHit> searchProduct(String userId, String query);
-
-    /** Replace the entire cart with these lines (Swiggy update_cart replaces, not merges). */
-    void updateCart(String userId, List<CartLine> lines);
+    void updateCart(String userId, List<CartItem> items);
 }

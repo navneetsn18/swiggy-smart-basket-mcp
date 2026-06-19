@@ -4,18 +4,19 @@ import com.smartbasket.domain.Basket;
 import com.smartbasket.domain.BasketItem;
 import com.smartbasket.substitution.SubstitutionService;
 import com.smartbasket.swiggy.SwiggyGateway;
-import com.smartbasket.swiggy.SwiggyGateway.CartLine;
-import com.smartbasket.swiggy.SwiggyGateway.ProductHit;
+import com.smartbasket.swiggy.SwiggyGateway.CartItem;
+import com.smartbasket.swiggy.SwiggyGateway.Variant;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
- * Adds a saved basket to the user's Swiggy cart, applying learned substitutions
- * when the preferred product is unavailable. Never checks out — that's the user's
- * call (idea.md core philosophy).
+ * Plans how a basket maps onto Swiggy products (LLM-mediated, spec issue #2 option c):
+ * resolves unambiguous in-stock items to a spinId, applies learned substitutions when
+ * the preferred item is out of stock, and surfaces ambiguous items (multiple variants)
+ * for the user to choose. It does NOT write the cart — the AI client collects the user's
+ * choices and calls {@code update_instamart_cart}. Never checks out.
  */
 @Service
 public class FulfillmentService {
@@ -30,50 +31,58 @@ public class FulfillmentService {
         this.swiggy = swiggy;
     }
 
-    public record Applied(String preferred, String usedInstead) {
+    /** An item resolved to a single product variant. {@code substituteFor} is the preferred name when substituted, else null. */
+    public record Resolved(String productName, String spinId, int quantity, String substituteFor) {
     }
 
-    public record Summary(List<CartLine> added, List<Applied> substitutions, List<String> unavailable) {
+    /** An item with several in-stock variants — the user must pick one. */
+    public record Choice(String productName, int quantity, List<Variant> variants) {
     }
 
-    public Summary addBasketToCart(String userId, String basketName) {
+    public record Plan(List<Resolved> resolved, List<Choice> needChoice, List<String> unavailable) {
+    }
+
+    public Plan planBasket(String userId, String basketName) {
         Basket basket = baskets.get(userId, basketName);
-
-        List<CartLine> added = new ArrayList<>();
-        List<Applied> applied = new ArrayList<>();
+        List<Resolved> resolved = new ArrayList<>();
+        List<Choice> needChoice = new ArrayList<>();
         List<String> unavailable = new ArrayList<>();
 
         for (BasketItem item : basket.getItems()) {
             String preferred = item.getProductName();
             int qty = item.getQuantity();
+            List<Variant> inStock = inStock(preferred);
 
-            if (isAvailable(userId, preferred)) {
-                added.add(new CartLine(preferred, qty));
-                continue;
-            }
-            // Preferred out of stock — walk the learned fallback chain.
-            String substitute = firstAvailableFallback(userId, preferred);
-            if (substitute != null) {
-                added.add(new CartLine(substitute, qty));
-                applied.add(new Applied(preferred, substitute));
+            if (inStock.size() == 1) {
+                resolved.add(new Resolved(preferred, inStock.get(0).spinId(), qty, null));
+            } else if (inStock.size() > 1) {
+                needChoice.add(new Choice(preferred, qty, inStock));
             } else {
-                unavailable.add(preferred);
+                Resolved sub = firstInStockFallback(userId, preferred, qty);
+                if (sub != null) {
+                    resolved.add(sub);
+                } else {
+                    unavailable.add(preferred);
+                }
             }
         }
-
-        swiggy.updateCart(userId, added);
-        return new Summary(added, applied, unavailable);
+        return new Plan(resolved, needChoice, unavailable);
     }
 
-    private boolean isAvailable(String userId, String productName) {
-        return swiggy.searchProduct(userId, productName).map(ProductHit::available).orElse(false);
+    /** Commit the chosen variants to the cart. Replaces the whole cart (Swiggy semantics). */
+    public void commit(String userId, List<CartItem> items) {
+        swiggy.updateCart(userId, items);
     }
 
-    private String firstAvailableFallback(String userId, String preferred) {
+    private List<Variant> inStock(String query) {
+        return swiggy.searchVariants(null, query).stream().filter(Variant::inStock).toList();
+    }
+
+    private Resolved firstInStockFallback(String userId, String preferred, int qty) {
         for (String fallback : substitutions.chain(userId, preferred)) {
-            Optional<ProductHit> hit = swiggy.searchProduct(userId, fallback);
-            if (hit.isPresent() && hit.get().available()) {
-                return fallback;
+            List<Variant> hits = inStock(fallback);
+            if (!hits.isEmpty()) {
+                return new Resolved(fallback, hits.get(0).spinId(), qty, preferred);
             }
         }
         return null;

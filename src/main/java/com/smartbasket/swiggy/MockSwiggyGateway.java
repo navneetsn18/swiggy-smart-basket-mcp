@@ -5,39 +5,46 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
- * Stand-in for the Swiggy Instamart MCP. Default (non-"live" profile) so all
- * basket/substitution features are testable without Swiggy access.
- *
- * <p>To exercise the substitution path, any product whose name contains
- * "1L" is treated as out of stock.
+ * Stand-in for the Swiggy Instamart MCP (default profile). Search rules, for tests:
+ * <ul>
+ *   <li>query contains "1L"  → out of stock (exercises substitution),</li>
+ *   <li>query contains "Bread" → two in-stock variants (exercises user choice),</li>
+ *   <li>otherwise → one in-stock variant.</li>
+ * </ul>
  */
 @Component
 @Profile("!live")
 public class MockSwiggyGateway implements SwiggyGateway {
 
-    private final List<CartLine> cart = new ArrayList<>(List.of(
-            new CartLine("Amul Full Cream Milk 1L", 2),
-            new CartLine("Farm Eggs 10 pcs", 1),
-            new CartLine("Amul Masti Curd 400g", 1)
-    ));
+    private final List<CartItem> cart = new ArrayList<>();
+
+    @Override
+    public List<Variant> searchVariants(String userId, String query) {
+        if (query.contains("1L")) {
+            return List.of(new Variant(spin(query), query, "1 L", false, 70));
+        }
+        if (query.contains("Bread")) {
+            return List.of(
+                    new Variant(spin(query + "-400"), query, "400 g", true, 45),
+                    new Variant(spin(query + "-800"), query, "800 g", true, 80));
+        }
+        return List.of(new Variant(spin(query), query, "1 unit", true, 50));
+    }
 
     @Override
     public List<CartLine> getCart(String userId) {
-        return List.copyOf(cart);
+        return cart.stream().map(i -> new CartLine(i.spinId(), i.quantity())).toList();
     }
 
     @Override
-    public Optional<ProductHit> searchProduct(String userId, String query) {
-        boolean available = !query.contains("1L"); // ponytail: simple OOS rule for tests
-        return Optional.of(new ProductHit(query, available));
-    }
-
-    @Override
-    public void updateCart(String userId, List<CartLine> lines) {
+    public void updateCart(String userId, List<CartItem> items) {
         cart.clear();
-        cart.addAll(lines);
+        cart.addAll(items);
+    }
+
+    private static String spin(String s) {
+        return "MOCK-" + Integer.toHexString(s.hashCode());
     }
 }

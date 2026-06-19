@@ -76,13 +76,29 @@ public class BasketTools {
         return view(baskets.saveCartAsBasket(userId, basketName));
     }
 
-    @Tool(description = "Add a saved basket to the user's Swiggy Instamart cart, applying learned "
-            + "substitutions for out-of-stock items. Does NOT checkout. Returns what was added, "
-            + "any substitutions applied, and items that could not be fulfilled.")
-    public FulfillmentService.Summary add_basket_to_instamart(
+    @Tool(description = "Plan adding a saved basket to Swiggy Instamart. Resolves each item to a "
+            + "product variant (spinId), applies learned substitutions for out-of-stock items, and "
+            + "lists items with multiple variants for the user to choose. Does NOT modify the cart — "
+            + "after the user picks any choices, call update_instamart_cart with the chosen spinIds.")
+    public FulfillmentService.Plan add_basket_to_instamart(
             @ToolParam(description = "User id") String userId,
             @ToolParam(description = "Basket name to add") String basketName) {
-        return fulfillment.addBasketToCart(userId, basketName);
+        return fulfillment.planBasket(userId, basketName);
+    }
+
+    @Tool(description = "Set the Swiggy Instamart cart to exactly these product variants (replaces the "
+            + "whole cart). Use the spinIds from add_basket_to_instamart plus the user's variant choices. "
+            + "Does NOT checkout.")
+    public String update_instamart_cart(
+            @ToolParam(description = "User id") String userId,
+            @ToolParam(description = "Items to put in the cart") List<CartItemInput> items) {
+        fulfillment.commit(userId, items.stream()
+                .map(i -> new com.smartbasket.swiggy.SwiggyGateway.CartItem(i.spinId(), i.quantity()))
+                .toList());
+        return "Cart updated with " + items.size() + " item(s). Review and checkout in Swiggy when ready.";
+    }
+
+    public record CartItemInput(String spinId, int quantity) {
     }
 
     private static BasketView view(Basket b) {
