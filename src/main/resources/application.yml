@@ -2,9 +2,9 @@ spring:
   application:
     name: smart-basket-mcp
   datasource:
-    url: jdbc:postgresql://localhost:5432/smart_basket
-    username: postgres
-    # ponytail: dev-only plaintext; override via SPRING_DATASOURCE_PASSWORD env before exposing the server
+    # All overridable by env (AWS Secrets Manager / App Runner inject these). Local defaults below.
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/smart_basket}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:password}
   jpa:
     hibernate:
