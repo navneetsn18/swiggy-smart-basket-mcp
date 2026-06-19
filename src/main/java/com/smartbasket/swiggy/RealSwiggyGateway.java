@@ -18,12 +18,22 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Calls the real Swiggy Instamart MCP (POST mcp.swiggy.com/im) over streamable HTTP.
+ * Calls the real Swiggy Instamart MCP (POST mcp.swiggy.com/im) via mcp-remote.
  *
- * <p>ponytail: Swiggy publishes tool <em>inputs</em> but not output JSON shapes. The
- * response field names below ("items", "products", "name", "available", ...) are a
- * best-effort guess — confirm them against the first real call and adjust. Everything
- * else (auth, transport, tool names) follows the published docs.
+ * <p>⚠️ KNOWN-INCOMPLETE — blocked, see GitHub issues. A live smoke test (2026-06-20)
+ * captured the real contract, which differs from this code:
+ * <ul>
+ *   <li>The cart is keyed by <b>spinId</b> (product variant id from search), not name.
+ *       {@code update_cart} needs {@code selectedAddressId} + {@code items:[{spinId,quantity}]}.</li>
+ *   <li>{@code search_products} requires an <b>addressId</b> (from {@code get_addresses}).</li>
+ *   <li>The machine-readable data is in the response's {@code structuredContent}
+ *       (e.g. {@code products[].variations[].spinId / isInStockAndAvailable}). But MCP
+ *       Java SDK 0.10.0's {@code CallToolResult} exposes only {@code content()} (prose
+ *       text) — it drops {@code structuredContent}. So this gateway cannot read the
+ *       clean JSON without an SDK/Spring AI upgrade.</li>
+ * </ul>
+ * The parsing below is therefore a placeholder. Do not enable {@code live} for real
+ * orders until the integration approach is decided.
  */
 @Component
 @Profile("live")
