@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: smart-basket-mcp
+  datasource:
+    # All overridable by env (AWS Secrets Manager / App Runner inject these). Local defaults below.
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/smart_basket}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:password}
+  jpa:
+    hibernate:
+      ddl-auto: validate   # Flyway owns the schema
+    open-in-view: false
+  flyway:
+    enabled: true
+  ai:
+    mcp:
+      server:
+        name: smart-basket-mcp
+        version: 0.1.0
+        type: SYNC
+        instructions: "Grocery memory layer: reusable baskets, substitutions, AI baskets, refill prediction on top of Swiggy Instamart."
+        capabilities:
+          tool: true
+        sse-message-endpoint: /mcp/messages
+      # Swiggy MCP client off by default (mock gateway). Enabled by the 'live' profile.
+      client:
+        enabled: false
+
+server:
+  port: 8080

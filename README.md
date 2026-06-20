@@ -86,7 +86,8 @@ All tools are scoped to a `user_id` supplied per request by the AI client.
 | `get_substitutions` | Return the fallback chain for a product |
 | `generate_ai_basket` | Build a basket from order history |
 | `suggest_refill` | Suggest products likely running low |
-| `add_basket_to_instamart` | Resolve → search → check availability → substitute → update cart → summary |
+| `add_basket_to_instamart` | Plan: resolve each item to a variant, substitute on OOS, surface choices |
+| `update_instamart_cart` | Commit chosen variants (spinIds) to the cart (no checkout) |
 
 **Swiggy Instamart MCP capabilities consumed** (never reimplemented): product
 search & discovery, cart retrieval & update, order history, frequently ordered
@@ -141,6 +142,45 @@ built and tested before Swiggy access is granted, then switched over in Phase 2.
 - Transaction data from Swiggy MCP stays governed by Swiggy's platform terms.
 
 ---
+
+## Run & test locally
+
+**Prerequisites:** Java 21, Maven, PostgreSQL running on `localhost:5432` with a
+`smart_basket` database (user `postgres`). Node.js is only needed for the `live`
+(real Swiggy) profile.
+
+```bash
+# Run the unit tests
+mvn test
+
+# Run the server (mock Swiggy gateway — no Swiggy access needed)
+mvn spring-boot:run
+# → MCP server on http://localhost:8080/sse
+```
+
+**Try the tools** with the MCP Inspector (a browser UI to list and call tools):
+
+```bash
+npx @modelcontextprotocol/inspector
+# In the UI: Transport = SSE, URL = http://localhost:8080/sse → Connect → list/run tools
+```
+
+Or wire it into Claude Desktop / Cursor (they speak stdio, so bridge via mcp-remote):
+
+```json
+{ "mcpServers": { "smart-basket": { "command": "npx",
+  "args": ["mcp-remote", "http://localhost:8080/sse"] } } }
+```
+
+**Run against real Swiggy** (`live` profile — needs Node + a one-time browser login):
+
+```bash
+export SWIGGY_ADDRESS_ID=<id from get_addresses>   # optional, default delivery address
+mvn spring-boot:run -Dspring-boot.run.profiles=live
+```
+
+**Protect it with an API key** (any profile): set `SMARTBASKET_API_KEY=...` and send
+`X-API-Key` on requests. Unset = open (local dev only).
 
 ## Status
 
