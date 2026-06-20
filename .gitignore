@@ -25,3 +25,10 @@ application-local.properties
 # Local machine config (not for repo)
 .claude/settings.local.json
 .gemini/settings.json.bak
+
+# Terraform (state/tfvars hold secrets — never commit)
+terraform/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
