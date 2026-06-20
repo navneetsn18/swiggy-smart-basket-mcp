@@ -24,9 +24,9 @@ import java.util.Map;
  * quantityDescription, displayName, isInStockAndAvailable, price.offerPrice};
  * update_cart needs {selectedAddressId, items:[{spinId, quantity}]}.
  *
- * <p>All shapes here are live-confirmed (2026-06-20): search_products variations and
- * get_cart items ({@code itemName, quantity, spinId}). update_cart's input contract is
- * schema-confirmed but the write was not executed live (it replaces the whole cart).
+ * <p>All paths are live-verified (2026-06-20): search_products variations,
+ * get_cart items ({@code itemName, quantity, spinId}), get_orders, and a reversible
+ * update_cart round-trip (qty change applied and restored).
  */
 @Component
 @Profile("live")
