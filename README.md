@@ -86,7 +86,8 @@ All tools are scoped to a `user_id` supplied per request by the AI client.
 | `get_substitutions` | Return the fallback chain for a product |
 | `generate_ai_basket` | Build a basket from order history |
 | `suggest_refill` | Suggest products likely running low |
-| `add_basket_to_instamart` | Resolve → search → check availability → substitute → update cart → summary |
+| `add_basket_to_instamart` | Plan: resolve each item to a variant, substitute on OOS, surface choices |
+| `update_instamart_cart` | Commit chosen variants (spinIds) to the cart (no checkout) |
 
 **Swiggy Instamart MCP capabilities consumed** (never reimplemented): product
 search & discovery, cart retrieval & update, order history, frequently ordered

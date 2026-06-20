@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -72,6 +73,20 @@ public class RealSwiggyGateway implements SwiggyGateway {
             lines.add(new CartLine(item.path("itemName").asText(), item.path("quantity").asInt(1)));
         }
         return lines;
+    }
+
+    @Override
+    public List<Order> getOrders(String userId) {
+        JsonNode root = call("get_orders", Map.of());
+        List<Order> orders = new ArrayList<>();
+        for (JsonNode o : root.path("orders")) {
+            List<OrderItem> items = new ArrayList<>();
+            for (JsonNode it : o.path("items")) {
+                items.add(new OrderItem(it.path("name").asText(), it.path("quantity").asInt(1)));
+            }
+            orders.add(new Order(Instant.parse(o.path("createdAt").asText()), items));
+        }
+        return orders;
     }
 
     @Override

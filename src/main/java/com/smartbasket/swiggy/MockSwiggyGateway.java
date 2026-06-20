@@ -3,6 +3,8 @@ package com.smartbasket.swiggy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,6 +44,19 @@ public class MockSwiggyGateway implements SwiggyGateway {
     public void updateCart(String userId, List<CartItem> items) {
         cart.clear();
         cart.addAll(items);
+    }
+
+    @Override
+    public List<Order> getOrders(String userId) {
+        Instant now = Instant.now();
+        // Milk every ~3 days (last 4 days ago → refill due); Eggs twice; Bread once.
+        return List.of(
+                new Order(now.minus(4, ChronoUnit.DAYS),
+                        List.of(new OrderItem("Amul Gold Milk 1 Ltr", 2), new OrderItem("Eggs", 1))),
+                new Order(now.minus(7, ChronoUnit.DAYS),
+                        List.of(new OrderItem("Amul Gold Milk 1 Ltr", 2), new OrderItem("Bread", 1))),
+                new Order(now.minus(10, ChronoUnit.DAYS),
+                        List.of(new OrderItem("Amul Gold Milk 1 Ltr", 2), new OrderItem("Eggs", 1))));
     }
 
     private static String spin(String s) {

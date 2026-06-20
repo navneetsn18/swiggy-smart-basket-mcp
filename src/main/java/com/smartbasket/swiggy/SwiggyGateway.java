@@ -1,5 +1,6 @@
 package com.smartbasket.swiggy;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -22,10 +23,21 @@ public interface SwiggyGateway {
     record CartItem(String spinId, int quantity) {
     }
 
+    /** A past-order line item. */
+    record OrderItem(String name, int quantity) {
+    }
+
+    /** A past order. */
+    record Order(Instant placedAt, List<OrderItem> items) {
+    }
+
     /** Variants matching a query at the user's default address (in-stock and not). */
     List<Variant> searchVariants(String userId, String query);
 
     List<CartLine> getCart(String userId);
 
     void updateCart(String userId, List<CartItem> items);
+
+    /** Past orders, newest first, for frequency/recency analysis. */
+    List<Order> getOrders(String userId);
 }
