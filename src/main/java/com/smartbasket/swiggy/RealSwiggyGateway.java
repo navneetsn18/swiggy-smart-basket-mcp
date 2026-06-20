@@ -23,8 +23,9 @@ import java.util.Map;
  * quantityDescription, displayName, isInStockAndAvailable, price.offerPrice};
  * update_cart needs {selectedAddressId, items:[{spinId, quantity}]}.
  *
- * <p>ponytail: get_cart's structured shape wasn't captured (empty cart errored in the
- * probe) — that parse is best-effort, confirm on first non-empty cart.
+ * <p>All shapes here are live-confirmed (2026-06-20): search_products variations and
+ * get_cart items ({@code itemName, quantity, spinId}). update_cart's input contract is
+ * schema-confirmed but the write was not executed live (it replaces the whole cart).
  */
 @Component
 @Profile("live")
@@ -67,8 +68,8 @@ public class RealSwiggyGateway implements SwiggyGateway {
         JsonNode root = call("get_cart", address());
         List<CartLine> lines = new ArrayList<>();
         for (JsonNode item : root.path("items")) {
-            lines.add(new CartLine(item.path("displayName").asText(item.path("name").asText()),
-                    item.path("quantity").asInt(1)));
+            // Live-confirmed cart item fields: itemName, quantity, spinId.
+            lines.add(new CartLine(item.path("itemName").asText(), item.path("quantity").asInt(1)));
         }
         return lines;
     }
